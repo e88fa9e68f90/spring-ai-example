@@ -6,12 +6,15 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,14 +29,12 @@ import reactor.core.publisher.Flux;
 public class McpController {
     private static final Logger LOGGER = LoggerFactory.getLogger(McpController.class);
     private static final String JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJkNTIzODYzZC0zODg4LTQzNmQtYjJjZC0zM2Y1MzI5YTBlYmYiLCJ1c2VySWQiOiIxNzUyOTIwODEzNTMzNzYxNTM3IiwibmFtZSI6IuWtmemAmiIsInZlcnNpb24iOjAsInVzZXJUeXBlIjoxLCJleHBpcmUiOjc3NzYwMDAsInBsYXlsb2FkIjoie1wiY3VzdG9tVHlwZVwiOlwiMVwiLFwiYWNjb3VudE5hbWVcIjpcImY0NjI4NTRiLTgyMGQtNDljNy1hOGQyLWNjYjBhMzNiZWFlNlwiLFwidXNlck5hbWVcIjpcImY0NjI4NTRiLTgyMGQtNDljNy1hOGQyLWNjYjBhMzNiZWFlNlwiLFwidG9rZW5cIjpcImY0NjI4NTRiLTgyMGQtNDljNy1hOGQyLWNjYjBhMzNiZWFlNlwifSIsImV4cCI6MTc1MzU0NjcwOH0.jW16SKshZMmZ668G8OQVV2vPRkq6oEIW6-klwLfYrCmJdi3NZCJpHmM0L1bKcxJ8oqEWt8ckacW8m7sRlLtix7d-lb62PAW9bu0SeuOo3ZE_IdsFNLwDDp9NIh5kY71f3B6146TvswlP59OlgYV9HJU9bWn5ZJmxftmxKdQ_iVI";
-    @Autowired
-    private ChatClient chatClient;
+//    @Autowired
+//    private ChatClient chatClient;
     @Autowired
     private OpenAiChatModel openAiChatModel;
     @Autowired
     private List<McpSyncClient> mcpSyncClients;
-//    @Autowired
-//    private SyncMcpToolCallbackProvider toolCallbackProvider;
 
     @GetMapping("/message-chat")
     public String chat(String message) {
@@ -70,13 +71,6 @@ public class McpController {
     @GetMapping(value = "/ai/generateStream-memory1")
     public Flux<String> generateStream1(@RequestParam(value = "message", defaultValue = "给我做个自我介绍") String message) {
         var mcpToolProvider = new SyncMcpToolCallbackProvider(mcpSyncClients);
-//        Prompt prompt = new Prompt(new UserMessage(message + " jwt=" + JWT));
-        String response = this.chatClient.prompt()
-                // Set advisor parameters at runtime
-                .advisors(advisor -> advisor.param("chat_memory_conversation_id", "678")
-                        .param("chat_memory_response_size", 100))
-                .user(message).call().content();
-        LOGGER.info("response: ", response);
         return ChatClient.builder(openAiChatModel).defaultToolCallbacks(mcpToolProvider).build().prompt()
                 .system("你是一个保险行业的专家")
                 .advisors(
@@ -108,4 +102,8 @@ public class McpController {
         return null;
     }
 
+    @Bean
+    public MessageChatMemoryAdvisor messageChatMemoryAdvisor() {
+        return new MessageChatMemoryAdvisor(new InMemoryChatMemory());
+    }
 }

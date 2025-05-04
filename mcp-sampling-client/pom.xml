@@ -59,7 +59,7 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-anthropic</artifactId>
         </dependency>-->
-        <!--<dependency>
+        <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-chat-memory-jdbc</artifactId>
         </dependency>
@@ -72,7 +72,7 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
-        </dependency>-->
+        </dependency>
     </dependencies>
 
     <build>
