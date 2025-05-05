@@ -25,4 +25,5 @@ public class CustomerSupportAssistant {
                         .param("chat_memory_response_size", 100))
                 .stream().content();
     }
+
 }
