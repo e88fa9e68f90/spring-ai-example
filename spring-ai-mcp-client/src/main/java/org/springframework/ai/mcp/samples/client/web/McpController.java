@@ -75,7 +75,7 @@ public class McpController {
         return ChatClient.builder(openAiChatModel).defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
                 .defaultToolCallbacks(mcpToolProvider)
                 .build().prompt()
-                .system("你是一个保险行业的专家")
+                .system("你是一个保险行业的专家，在回答的时候输出一下思考过程。")
                 .advisors(
                 advisor -> advisor.param("chat_memory_conversation_id", "678").param("chat_memory_response_size", 100))
                 .user(message + " jwt=" + JWT).stream().content();
