@@ -13,6 +13,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -71,11 +72,18 @@ public class McpController {
 
     @GetMapping(value = "/ai/generateStream-memory1")
     public Flux<String> generateStream1(@RequestParam(value = "message", defaultValue = "给我做个自我介绍") String message) {
+        LOGGER.info("进入人工智能问答区域：{}", message);
         var mcpToolProvider = new SyncMcpToolCallbackProvider(mcpSyncClients);
+        // 打印需要注册的mcp server服务
+        for (ToolCallback toolCallback : mcpToolProvider.getToolCallbacks()) {
+            LOGGER.info("mcp server getToolDefinition: {}, {}", toolCallback.getToolDefinition().name(),
+                    toolCallback.getToolDefinition().description());
+            LOGGER.info("mcp server getToolMetadata: {}", toolCallback.getToolMetadata());
+        }
         return ChatClient.builder(openAiChatModel).defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
                 .defaultToolCallbacks(mcpToolProvider)
                 .build().prompt()
-                .system("你是一个保险行业的专家，在回答的时候输出一下思考过程。")
+                .system("你是一个保险行业的专家，不能回答除了保险以外的问题。")
                 .advisors(
                 advisor -> advisor.param("chat_memory_conversation_id", "678").param("chat_memory_response_size", 100))
                 .user(message + " jwt=" + JWT).stream().content();
