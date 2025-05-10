@@ -29,8 +29,7 @@ import reactor.core.publisher.Flux;
 public class McpController {
     private static final Logger LOGGER = LoggerFactory.getLogger(McpController.class);
     private static final String JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJkNTIzODYzZC0zODg4LTQzNmQtYjJjZC0zM2Y1MzI5YTBlYmYiLCJ1c2VySWQiOiIxNzUyOTIwODEzNTMzNzYxNTM3IiwibmFtZSI6IuWtmemAmiIsInZlcnNpb24iOjAsInVzZXJUeXBlIjoxLCJleHBpcmUiOjc3NzYwMDAsInBsYXlsb2FkIjoie1wiY3VzdG9tVHlwZVwiOlwiMVwiLFwiYWNjb3VudE5hbWVcIjpcImY0NjI4NTRiLTgyMGQtNDljNy1hOGQyLWNjYjBhMzNiZWFlNlwiLFwidXNlck5hbWVcIjpcImY0NjI4NTRiLTgyMGQtNDljNy1hOGQyLWNjYjBhMzNiZWFlNlwiLFwidG9rZW5cIjpcImY0NjI4NTRiLTgyMGQtNDljNy1hOGQyLWNjYjBhMzNiZWFlNlwifSIsImV4cCI6MTc1MzU0NjcwOH0.jW16SKshZMmZ668G8OQVV2vPRkq6oEIW6-klwLfYrCmJdi3NZCJpHmM0L1bKcxJ8oqEWt8ckacW8m7sRlLtix7d-lb62PAW9bu0SeuOo3ZE_IdsFNLwDDp9NIh5kY71f3B6146TvswlP59OlgYV9HJU9bWn5ZJmxftmxKdQ_iVI";
-//    @Autowired
-//    private ChatClient chatClient;
+    private ChatClient chatClient;
     @Autowired
     private ChatMemory chatMemory;
     @Autowired
@@ -38,6 +37,13 @@ public class McpController {
     @Autowired
     private List<McpSyncClient> mcpSyncClients;
 
+    @Autowired
+    public McpController(OpenAiChatModel openAiChatModel, ChatMemory chatMemory, List<McpSyncClient> mcpSyncClients) {
+        var mcpToolProvider = new SyncMcpToolCallbackProvider(mcpSyncClients);
+        chatClient = ChatClient.builder(openAiChatModel).defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
+                .defaultToolCallbacks(mcpToolProvider)
+                .build();
+    }
     @GetMapping("/message-chat")
     public String chat(String message) {
         var mcpToolProvider = new SyncMcpToolCallbackProvider(mcpSyncClients);
@@ -83,9 +89,20 @@ public class McpController {
         return ChatClient.builder(openAiChatModel).defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
                 .defaultToolCallbacks(mcpToolProvider)
                 .build().prompt()
-                .system("你是一个保险行业的专家，不能回答除了保险以外的问题。")
+                .system("你是一个保险行业的专家。")
                 .advisors(
-                advisor -> advisor.param("chat_memory_conversation_id", "678").param("chat_memory_response_size", 100))
+                        advisor -> advisor.param("chat_memory_conversation_id", "678")
+                                .param("chat_memory_response_size", 100))
+                .user(message + " jwt=" + JWT).stream().content();
+    }
+
+    @GetMapping(value = "/ai/generateStream-memory2")
+    public Flux<String> generateStream2(@RequestParam("id") String id,
+            @RequestParam(value = "message", defaultValue = "给我做个自我介绍") String message) {
+        LOGGER.info("进入人工智能问答区域：{}", message);
+        return this.chatClient.prompt().system("你是一个保险行业的专家。")
+                .advisors(advisor -> advisor.param("chat_memory_conversation_id", id)
+                        .param("chat_memory_response_size", 100))
                 .user(message + " jwt=" + JWT).stream().content();
     }
     @GetMapping("/ai/generateStream-v2")

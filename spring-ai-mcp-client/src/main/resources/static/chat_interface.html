@@ -267,7 +267,7 @@
             // 处理流式响应 
             async function fetchStreamResponse(message) {
                 const aiContent = addAiMessage();
-                const url = `http://127.0.0.1:8001/mcp/client/ai/generateStream-memory1?message=${encodeURIComponent(message)}`;
+                const url = `http://127.0.0.1:8001/mcp/client/ai/generateStream-memory2?id=555&message=${encodeURIComponent(message)}`;
                 
                 try {
                     const response = await fetch(url);

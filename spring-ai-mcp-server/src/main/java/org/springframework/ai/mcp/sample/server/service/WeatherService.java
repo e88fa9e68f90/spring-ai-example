@@ -21,12 +21,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.mcp.sample.server.entity.PolicyResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -44,7 +50,7 @@ import okhttp3.Response;
 @Service
 public class WeatherService {
 
-    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(WeatherService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WeatherService.class);
 
     private final RestClient restClient;
 
@@ -68,17 +74,26 @@ public class WeatherService {
 
     @Tool(description = "根据个人信息查询用理赔列表数据")
     public String getCliams(String jwt) {
-        return this.getClaimsHttp(jwt);
+        LOGGER.info("查询根据个人信息查询用理赔列表数据，" + jwt);
+        String json = this.getClaimsHttp(jwt);
+        LOGGER.info("根据个人信息查询用理赔列表数据:{}", json);
+        return json;
     }
 
     @Tool(description = "根据个人信息查询保单列表数据")
-    public String getPolicys(@ToolParam(description = "jwt用户授权") String jwt) {
-        return this.getPolicysHttp(jwt);
+    public PolicyResponse getPolicys(
+            @ToolParam(description = "jwt用户授权") String jwt) throws JsonMappingException, JsonProcessingException {
+        LOGGER.info("根据个人信息查询保单列表数据，" + jwt);
+        String json = this.getPolicysHttp(jwt);
+        LOGGER.info("根据个人信息查询保单列表数据:{}", json);
+        ObjectMapper ob = new ObjectMapper();
+        return ob.readValue(json, PolicyResponse.class);
     }
 
     @Tool(description = "根据个人信息查询保单详情数据")
     public String getPolicyDetail(@ToolParam(description = "jwt用户授权") String jwt,
             @ToolParam(description = "要查询的保单号") String policyNo) {
+        LOGGER.info("根据个人信息查询保单详情数据，" + jwt);
         OkHttpClient client = new OkHttpClient();
 
         // 构建请求
@@ -99,6 +114,7 @@ public class WeatherService {
     @Tool(description = "根据个人信息查询某个保单下的功能服务菜单")
     public String getPolicysDetailMenu(@ToolParam(description = "jwt用户授权") String jwt,
             @ToolParam(description = "要查询的保单号") String policyNo) {
+        LOGGER.info("根据个人信息查询某个保单下的功能服务菜单，" + jwt);
         OkHttpClient client = new OkHttpClient();
 
         // 构建请求
@@ -146,7 +162,6 @@ public class WeatherService {
                 .post(jsonBody)
                 .header("Content-Type", "application/json; charset=utf-8")
                 .header("Authorization", "Bearer " + jwt).build();
-
         try {
             Response response = client.newCall(request).execute();
             return response.body().string();
@@ -183,7 +198,7 @@ public class WeatherService {
         String responseWithPoems = "OpenAI poem about the weather: " + openAiWeatherPoem + "\n\n"
                 + "Anthropic poem about the weather: " + anthropicWeatherPoem + "\n"
                 + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse);
-        logger.info(anthropicWeatherPoem, responseWithPoems);
+        LOGGER.info(anthropicWeatherPoem, responseWithPoems);
         return responseWithPoems;
 
     }
