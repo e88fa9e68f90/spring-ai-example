@@ -100,7 +100,7 @@ public class McpController {
     public Flux<String> generateStream2(@RequestParam("id") String id,
             @RequestParam(value = "message", defaultValue = "给我做个自我介绍") String message) {
         LOGGER.info("进入人工智能问答区域：{}", message);
-        return this.chatClient.prompt().system("你是一个保险行业的专家。")
+        return this.chatClient.prompt().system("你是一个保险行业的专家，禁止回答保险以外的问题。")
                 .advisors(advisor -> advisor.param("chat_memory_conversation_id", id)
                         .param("chat_memory_response_size", 100))
                 .user(message + " jwt=" + JWT).stream().content();
